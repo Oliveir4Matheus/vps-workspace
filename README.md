@@ -185,7 +185,9 @@ ssh usuario@ip-da-vps
 docker exec -it <nome-do-container> bash
 ```
 
-Você cai dentro do `/workspace`, com `git`, `python`, `node` e `claude` disponíveis.
+Você cai dentro do `/workspace`, com `git`, `python`, `node`, `gh` (GitHub CLI) e `claude` disponíveis.
+
+> O `gh` pode autenticar automaticamente se você definir a variável de ambiente `GH_TOKEN` (um Personal Access Token) na aplicação do Coolify.
 
 ---
 
@@ -199,7 +201,7 @@ Repita os passos **3 a 6** para cada projeto novo: um bot novo no BotFather, uma
 
 ```
 vps-workspace-template/
-├── Dockerfile        # debian-slim + Python + Node + Git + Claude Code + bot
+├── Dockerfile        # debian-slim + Python + Node + Git + GitHub CLI + Claude Code + bot
 ├── bot.py            # Telegram → claude --continue -p (lock por chat, typing contínuo)
 ├── entrypoint.sh     # valida envs, configura SSH/git, clona repo, sobe o bot
 ├── setup.sh          # comando 'setup' interativo
