@@ -70,8 +70,11 @@ Mande qualquer mensagem para [@userinfobot](https://t.me/userinfobot). Ele respo
    | `GIT_USER_NAME` | ⬜ | Nome para os commits |
    | `GIT_USER_EMAIL` | ⬜ | Email para os commits |
    | `SSH_PRIVATE_KEY` | ⬜ | Chave SSH privada (para clonar repos privados) |
+   | `GH_TOKEN` | ⬜ | Token do GitHub — autentica o `gh` e o `git` (HTTPS) no start |
    | `WORK_DIR` | ⬜ | Diretório de trabalho (padrão: `/workspace`) |
    | `CLAUDE_TIMEOUT` | ⬜ | Timeout por instrução em segundos (padrão: `300`) |
+   | `CLAUDE_MODEL` | ⬜ | Modelo inicial do Claude (ajustável via `/model`) |
+   | `CLAUDE_EFFORT` | ⬜ | Effort inicial: `low`/`medium`/`high`/`max` (ajustável via `/effort`) |
 
 4. Em **Persistent Storage**, adicione dois volumes:
 
@@ -94,10 +97,12 @@ Abra o Telegram, encontre seu bot e envie `/start`. Se responder, está pronto. 
 
 Para clonar um repo privado, escolha **uma** das opções:
 
-- **Via env var:** cole a chave SSH privada em `SSH_PRIVATE_KEY` no Coolify. O entrypoint a instala automaticamente.
-- **Via comando interativo:** após o deploy, rode o `setup` (veja abaixo) e cole a chave por lá.
+- **GitHub CLI via env var:** defina `GH_TOKEN` no Coolify. No start, o entrypoint roda `gh auth setup-git` e o `git`/`gh` já clonam repos privados via HTTPS.
+- **GitHub CLI via setup:** após o deploy, rode o `setup` e use "Autenticar GitHub CLI (colar token)".
+- **Chave SSH via env var:** cole a chave privada em `SSH_PRIVATE_KEY` no Coolify. O entrypoint a instala automaticamente.
+- **Chave SSH via setup:** após o deploy, rode o `setup` e cole a chave em "Configurar chave SSH".
 
-Prefira **deploy keys por repositório** em vez de uma chave pessoal — se um container for comprometido, o dano fica restrito àquele projeto.
+Prefira **tokens com escopo mínimo** ou **deploy keys por repositório** em vez de uma chave/token pessoal amplo — se um container for comprometido, o dano fica restrito àquele projeto.
 
 ---
 
@@ -170,7 +175,9 @@ docker exec -it <nome-do-container> setup
 ```
 
 Menu disponível:
-- Clonar / trocar repositório
+- Clonar / trocar repositório (URL direta — substitui todo o `/workspace`)
+- Autenticar GitHub CLI (colar token) — autentica o `gh` e configura o `git` via HTTPS
+- Clonar repositórios (GitHub CLI) — lista seus repos e permite selecionar vários para clonar em `/workspace/<nome>`
 - Configurar chave SSH (colar)
 - Configurar identidade git
 - Testar Claude Code

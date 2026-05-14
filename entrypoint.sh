@@ -19,6 +19,16 @@ fi
 [ -n "$GIT_USER_NAME" ]  && git config --global user.name  "$GIT_USER_NAME"
 [ -n "$GIT_USER_EMAIL" ] && git config --global user.email "$GIT_USER_EMAIL"
 
+# --- autentica GitHub CLI via token (opcional) ---
+# o gh le GH_TOKEN do ambiente automaticamente; setup-git faz o git usa-lo via https
+if [ -n "$GH_TOKEN" ]; then
+    if gh auth setup-git 2>/dev/null; then
+        echo "[entrypoint] GitHub CLI autenticado via GH_TOKEN"
+    else
+        echo "[entrypoint] aviso: GH_TOKEN definido mas gh auth setup-git falhou"
+    fi
+fi
+
 # --- clona o repo se /workspace estiver vazio ---
 if [ -z "$(ls -A /workspace 2>/dev/null)" ] && [ -n "$REPO_URL" ]; then
     echo "[entrypoint] /workspace vazio — clonando $REPO_URL"
