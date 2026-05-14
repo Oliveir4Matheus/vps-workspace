@@ -106,14 +106,58 @@ Prefira **deploy keys por repositório** em vez de uma chave pessoal — se um c
 | Comando | Ação |
 |---|---|
 | `/start` | Mensagem de boas-vindas |
+| `/help` | Lista todos os comandos disponíveis |
 | `/clear` | A próxima mensagem inicia uma conversa nova (sem `--continue`) |
-| `/status` | Mostra `WORK_DIR` e branch atual |
+| `/status` | Mostra `WORK_DIR`, branch, modelo e effort atuais |
+| `/model <nome>` | Define o modelo do Claude (`sonnet`, `opus`, `haiku` ou ID completo). Sem argumento, mostra o atual |
+| `/effort <nível>` | Define o esforço: `low`, `medium`, `high` ou `max`. Sem argumento, mostra o atual |
 | *(qualquer texto)* | Repassado ao Claude Code como instrução |
 
 Comportamento:
 - **Contexto contínuo:** mensagens em sequência mantêm o contexto via `claude --continue`.
 - **Uma por vez:** enquanto uma instrução processa, novas mensagens são recusadas.
+- **Respostas para Telegram:** todas as instruções recebem um system prompt fixo (`--append-system-prompt`) que orienta o Claude a responder de forma estruturada e concisa, adequada para leitura no celular.
+- **Modelo e effort:** ajustáveis em runtime via `/model` e `/effort`, ou definidos no start via `CLAUDE_MODEL` e `CLAUDE_EFFORT`. O effort é aplicado via `MAX_THINKING_TOKENS` (low=4k, medium=10k, high=20k, max=32k).
 - **Segurança:** somente IDs em `ALLOWED_USER_IDS` são atendidos. Sem essa variável, o bot **não inicia**.
+
+---
+
+## Restringir o bot apenas a você
+
+O bot já recusa qualquer pessoa fora de `ALLOWED_USER_IDS`, mas o ideal é fechar todas as portas. Faça o seguinte:
+
+### 1. Só o seu ID na allowlist
+
+Em `ALLOWED_USER_IDS`, deixe **apenas o seu ID** — nada de vírgulas, nada de outros IDs:
+
+```
+ALLOWED_USER_IDS=123456789
+```
+
+Qualquer mensagem de outro ID recebe "⛔ Acesso negado" e nada é executado. Esta é a barreira principal.
+
+### 2. Bloqueie o bot em grupos (BotFather)
+
+Por padrão um bot pode ser adicionado a grupos. Desative isso para que ele só funcione em conversa privada com você:
+
+1. Abra o [@BotFather](https://t.me/BotFather)
+2. `/mybots` → selecione o bot → **Bot Settings** → **Allow Groups?** → **Turn off**
+
+### 3. Mantenha a privacidade de grupo ativada (BotFather)
+
+Garante que, mesmo se de alguma forma entrar num grupo, o bot não leia as mensagens:
+
+- **Bot Settings** → **Group Privacy** → **Turn on**
+
+### 4. Não divulgue o username do bot
+
+O token e o username são o que dá acesso à *tentativa* de uso. Mesmo que alguém descubra o username, sem o ID na allowlist não consegue nada — mas não há motivo para facilitar. Não coloque o bot em listas públicas nem compartilhe o username.
+
+### 5. Trate o `TELEGRAM_TOKEN` como senha
+
+Quem tem o token **controla o bot**. Mantenha como *secret* no Coolify, nunca commite no repositório. Se vazar, gere outro no BotFather (`/mybots` → **API Token** → **Revoke**).
+
+> Resumo: a segurança real é `ALLOWED_USER_IDS` com só o seu ID + o `TELEGRAM_TOKEN` protegido. Os passos 2-4 só reduzem a superfície de exposição.
 
 ---
 
