@@ -36,4 +36,13 @@ RUN chmod +x entrypoint.sh setup.sh remote-control.sh bot-control.sh prime-claud
     && ln -s /app/bot-control.sh /usr/local/bin/bot-control
 
 WORKDIR /workspace
+
+# Declara os pontos de mount necessarios para persistencia:
+# - /workspace: repo clonado e trabalho em progresso
+# - /root/.claude: credenciais OAuth (claude auth login), historico, configs
+# IMPORTANTE: no Coolify, ainda eh necessario configurar Persistent Storage
+# mapeando esses caminhos para volumes nomeados — senao o Docker cria
+# anonymous volumes que viram orfaos a cada recriacao do container.
+VOLUME ["/workspace", "/root/.claude"]
+
 ENTRYPOINT ["/app/entrypoint.sh"]
