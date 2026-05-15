@@ -6,13 +6,16 @@ set -e
 SESSION="${CLAUDE_RC_TMUX_SESSION:-claude-rc}"
 WORK_DIR="${WORK_DIR:-/workspace}"
 
-# monta o comando do claude, incluindo --remote-control [name] se informado
+# monta o comando do claude, incluindo --remote-control [name] se informado.
+# IMPORTANTE: faz unset de CLAUDE_CODE_OAUTH_TOKEN e ANTHROPIC_API_KEY antes
+# de exec'ar o claude — esses tokens sao inference-only e fariam o claude
+# ignorar /root/.claude/.credentials.json (que tem o login full-scope).
 build_cmd() {
-    local cmd="claude --remote-control"
+    local name=""
     if [ -n "$CLAUDE_REMOTE_CONTROL_NAME" ]; then
-        cmd="$cmd $(printf '%q' "$CLAUDE_REMOTE_CONTROL_NAME")"
+        name=" $(printf '%q' "$CLAUDE_REMOTE_CONTROL_NAME")"
     fi
-    echo "$cmd"
+    echo "bash -c 'unset CLAUDE_CODE_OAUTH_TOKEN ANTHROPIC_API_KEY; exec claude --remote-control${name}'"
 }
 
 session_exists() {
