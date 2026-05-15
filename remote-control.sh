@@ -36,7 +36,18 @@ cmd_start() {
     fi
     local cmd
     cmd="$(build_cmd)"
-    tmux new-session -d -s "$SESSION" -c "$WORK_DIR" "$cmd"
+
+    # Propaga env essencial para a sessao tmux. Sem isso, o tmux server pode
+    # entregar o comando sem CLAUDE_CODE_OAUTH_TOKEN e o claude cai no login.
+    local env_args=()
+    [ -n "$CLAUDE_CODE_OAUTH_TOKEN" ] && \
+        env_args+=( -e "CLAUDE_CODE_OAUTH_TOKEN=$CLAUDE_CODE_OAUTH_TOKEN" )
+    [ -n "$ANTHROPIC_API_KEY" ] && \
+        env_args+=( -e "ANTHROPIC_API_KEY=$ANTHROPIC_API_KEY" )
+    [ -n "$HOME" ] && env_args+=( -e "HOME=$HOME" )
+    [ -n "$PATH" ] && env_args+=( -e "PATH=$PATH" )
+
+    tmux new-session -d "${env_args[@]}" -s "$SESSION" -c "$WORK_DIR" "$cmd"
     sleep 1
     if session_exists; then
         echo "✅ remote-control iniciado em tmux (sessao '$SESSION')"

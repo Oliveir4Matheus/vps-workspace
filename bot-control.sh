@@ -24,8 +24,19 @@ cmd_start() {
         echo "ℹ️  bot ja esta rodando — use 'restart' para reiniciar"
         return 0
     fi
-    # capture-pane funciona melhor com pipe-pane; usamos um wrapper que tee'a o log
-    tmux new-session -d -s "$SESSION" -c /app \
+
+    # Propaga env essencial — o bot e o claude que ele dispara precisam
+    # destas vars. Sem -e, o tmux server pode usar um snapshot antigo.
+    local env_args=()
+    for v in TELEGRAM_TOKEN ALLOWED_USER_IDS CLAUDE_CODE_OAUTH_TOKEN \
+             ANTHROPIC_API_KEY WORK_DIR CLAUDE_TIMEOUT CLAUDE_MODEL \
+             CLAUDE_EFFORT HOME PATH; do
+        if [ -n "${!v}" ]; then
+            env_args+=( -e "$v=${!v}" )
+        fi
+    done
+
+    tmux new-session -d "${env_args[@]}" -s "$SESSION" -c /app \
         "python /app/bot.py 2>&1 | tee -a /var/log/bot.log"
     sleep 1
     if session_exists; then
