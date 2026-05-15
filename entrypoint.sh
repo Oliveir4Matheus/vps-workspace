@@ -37,5 +37,31 @@ else
     echo "[entrypoint] /workspace ja populado ou REPO_URL ausente — pulando clone"
 fi
 
-echo "[entrypoint] iniciando bot..."
-exec python /app/bot.py
+# --- bot Telegram (opcional, default ligado) ---
+case "${ENABLE_BOT,,}" in
+    0|false|no|off)
+        echo "[entrypoint] ENABLE_BOT desligado — pulando bot"
+        ;;
+    *)
+        echo "[entrypoint] iniciando bot Telegram em tmux..."
+        /app/bot-control.sh start || \
+            echo "[entrypoint] aviso: falha ao iniciar bot (seguindo)"
+        ;;
+esac
+
+# --- claude remote-control (opcional, default desligado) ---
+# Se CLAUDE_REMOTE_CONTROL=true, sobe uma sessao interativa do claude
+# com --remote-control dentro de tmux detached. Acessivel via claude.ai
+# e tambem por 'tmux attach -t claude-rc' dentro do container.
+case "${CLAUDE_REMOTE_CONTROL,,}" in
+    1|true|yes|on)
+        echo "[entrypoint] iniciando claude --remote-control em tmux..."
+        /app/remote-control.sh start || \
+            echo "[entrypoint] aviso: falha ao iniciar remote-control (seguindo)"
+        ;;
+esac
+
+# Mantem o container vivo. Bot e remote-control rodam dentro de tmux e podem
+# ser parados/reiniciados via 'setup' sem derrubar o container.
+echo "[entrypoint] workspace pronto — PID 1 em modo guarda"
+exec tail -f /dev/null

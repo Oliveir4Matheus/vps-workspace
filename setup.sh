@@ -14,6 +14,14 @@ options=(
     "Configurar chave SSH (colar)"
     "Configurar identidade git"
     "Testar Claude Code"
+    "Bot: iniciar"
+    "Bot: parar"
+    "Bot: reiniciar"
+    "Bot: ver logs (tail)"
+    "Reiniciar Claude Remote Control"
+    "Cloudflared: autenticar (login)"
+    "Cloudflared: tunnel rapido (--url)"
+    "Cloudflared: parar tunnel"
     "Ver status"
     "Sair"
 )
@@ -99,9 +107,59 @@ select opt in "${options[@]}"; do
             claude -p "responda apenas: ok" \
                 || echo "❌ Falhou — verifique CLAUDE_CODE_OAUTH_TOKEN"
             ;;
+        "Bot: iniciar")
+            /app/bot-control.sh start
+            ;;
+        "Bot: parar")
+            /app/bot-control.sh stop
+            ;;
+        "Bot: reiniciar")
+            /app/bot-control.sh restart
+            ;;
+        "Bot: ver logs (tail)")
+            /app/bot-control.sh logs
+            ;;
+        "Reiniciar Claude Remote Control")
+            /app/remote-control.sh restart
+            ;;
+        "Cloudflared: autenticar (login)")
+            echo "Abrira uma URL para autorizar no navegador."
+            echo "Copie a URL exibida, abra no seu computador e siga o fluxo."
+            cloudflared tunnel login || echo "❌ Falha no login"
+            ;;
+        "Cloudflared: tunnel rapido (--url)")
+            read -rp "Porta local a expor (ex: 8000): " porta
+            if [ -z "$porta" ]; then
+                echo "Cancelado."
+            else
+                echo "Subindo tunnel para http://localhost:$porta ..."
+                echo "(Ctrl-C encerra; a URL trycloudflare.com sera exibida)"
+                cloudflared tunnel --url "http://localhost:$porta" || true
+            fi
+            ;;
+        "Cloudflared: parar tunnel")
+            if pgrep -f "cloudflared tunnel" >/dev/null; then
+                pkill -f "cloudflared tunnel" && echo "🛑 cloudflared encerrado."
+            else
+                echo "ℹ️  nenhum tunnel cloudflared em execucao."
+            fi
+            ;;
         "Ver status")
             echo "WORK_DIR: /workspace"
             git -C /workspace status 2>/dev/null || echo "(sem repositorio)"
+            echo
+            echo "--- Bot Telegram ---"
+            /app/bot-control.sh status || true
+            echo
+            echo "--- Claude Remote Control ---"
+            /app/remote-control.sh status || true
+            echo
+            echo "--- Cloudflared ---"
+            if pgrep -f "cloudflared tunnel" >/dev/null; then
+                echo "✅ cloudflared rodando (pid $(pgrep -f 'cloudflared tunnel' | head -1))"
+            else
+                echo "⏸️  cloudflared parado"
+            fi
             ;;
         "Sair")
             break

@@ -75,6 +75,9 @@ Mande qualquer mensagem para [@userinfobot](https://t.me/userinfobot). Ele respo
    | `CLAUDE_TIMEOUT` | ⬜ | Timeout por instrução em segundos (padrão: `300`) |
    | `CLAUDE_MODEL` | ⬜ | Modelo inicial do Claude (ajustável via `/model`) |
    | `CLAUDE_EFFORT` | ⬜ | Effort inicial: `low`/`medium`/`high`/`max` (ajustável via `/effort`) |
+   | `ENABLE_BOT` | ⬜ | `true`/`false` — inicia o bot Telegram no boot (padrão: `true`) |
+   | `CLAUDE_REMOTE_CONTROL` | ⬜ | `true` para iniciar `claude --remote-control` em tmux no boot (padrão: `false`) |
+   | `CLAUDE_REMOTE_CONTROL_NAME` | ⬜ | Nome da sessão remote-control exibido no claude.ai |
 
 4. Em **Persistent Storage**, adicione dois volumes:
 
@@ -181,6 +184,11 @@ Menu disponível:
 - Configurar chave SSH (colar)
 - Configurar identidade git
 - Testar Claude Code
+- **Bot:** iniciar / parar / reiniciar / ver logs (gerencia o `python bot.py` em tmux)
+- Reiniciar Claude Remote Control (mata e recria a sessão tmux do `claude --remote-control`)
+- Cloudflared: autenticar (login) — vincula o `cloudflared` à sua conta Cloudflare
+- Cloudflared: tunnel rápido (`--url`) — expõe uma porta local via `*.trycloudflare.com`
+- Cloudflared: parar tunnel
 - Ver status
 
 ---
@@ -208,13 +216,42 @@ Repita os passos **3 a 6** para cada projeto novo: um bot novo no BotFather, uma
 
 ```
 vps-workspace-template/
-├── Dockerfile        # debian-slim + Python + Node + Git + GitHub CLI + Claude Code + bot
-├── bot.py            # Telegram → claude --continue -p (lock por chat, typing contínuo)
-├── entrypoint.sh     # valida envs, configura SSH/git, clona repo, sobe o bot
-├── setup.sh          # comando 'setup' interativo
+├── Dockerfile          # debian-slim + Python + Node + Git + GitHub CLI + Claude Code + tmux + cloudflared + bot
+├── bot.py              # Telegram → claude --continue -p (lock por chat, typing contínuo)
+├── entrypoint.sh       # valida envs, configura SSH/git, clona repo, sobe bot e/ou remote-control (conforme flags), mantém PID 1
+├── setup.sh            # comando 'setup' interativo
+├── bot-control.sh      # comando 'bot-control' — gerencia a sessão tmux do bot Telegram
+├── remote-control.sh   # comando 'remote-control' — gerencia a sessão tmux do claude --remote-control
 ├── requirements.txt
 └── .env.example
 ```
+
+---
+
+## Arquitetura de processos
+
+O PID 1 do container é um processo guarda leve (`tail -f /dev/null`). Os serviços (bot Telegram, `claude --remote-control`) rodam dentro de **sessões tmux detached** independentes, controladas por scripts dedicados (`bot-control`, `remote-control`). Isso permite parar/iniciar/reiniciar cada um sem derrubar o container.
+
+| Serviço | Como ligar no boot | Comando manual |
+|---|---|---|
+| Bot Telegram | `ENABLE_BOT=true` (padrão) | `bot-control {start\|stop\|restart\|status\|logs\|attach}` |
+| Claude Remote Control | `CLAUDE_REMOTE_CONTROL=true` | `remote-control {start\|stop\|restart\|status\|attach}` |
+
+## Claude Remote Control
+
+Com `CLAUDE_REMOTE_CONTROL=true`, o container sobe uma sessão interativa do `claude --remote-control` em **tmux detached**, em paralelo ao bot. Essa sessão fica visível e controlável pelo claude.ai (mesma interface de remote agents).
+
+- A sessão tmux chama-se `claude-rc` e roda em `/workspace`.
+- Para ver / interagir direto: `docker exec -it <ctn> tmux attach -t claude-rc` (sair sem matar: `Ctrl-b d`).
+- Para gerenciar do shell do container: `remote-control {start|stop|restart|status|attach}`.
+- Se algo travar, use a opção **"Reiniciar Claude Remote Control"** no `setup`.
+
+## Cloudflared (acesso remoto a apps locais)
+
+O `cloudflared` vem instalado para expor apps que você rodar dentro do `/workspace` (FastAPI, Next, etc) sem mexer em DNS/Coolify. Não é necessário para o `--remote-control` do Claude (a Anthropic faz o roteamento).
+
+- **Tunnel rápido (sem conta):** `cloudflared tunnel --url http://localhost:8000` → gera uma URL `*.trycloudflare.com` temporária. Também acessível via `setup` → "Cloudflared: tunnel rápido".
+- **Tunnel persistente (com conta):** `setup` → "Cloudflared: autenticar" para vincular à sua conta, depois `cloudflared tunnel create <nome>` e configure o `config.yml` em `/root/.cloudflared/`.
 
 ---
 
