@@ -1,6 +1,8 @@
 # Documentação — VPS Workspace Template
 
-Este template cria containers Docker de desenvolvimento isolados, cada um dedicado a um projeto/repositório. Dentro do container rodam o **Claude Code** (CLI da Anthropic) e um **bot do Telegram** que repassa instruções ao Claude — permitindo operar num codebase remotamente, do celular ou de qualquer lugar. Opcionalmente, o container também sobe uma sessão `claude --remote-control` acessível via [claude.ai/code](https://claude.ai/code).
+Este template cria **sandboxes isolados** (um container Docker por projeto) onde agentes de IA — principalmente o **Claude Code** — podem desenvolver aplicações com liberdade, sem risco para o host nem para outros projetos. O propósito central é **vibecode seguro**: você descreve o que quer, o Claude opera no código, e o blast radius de qualquer ação fica contido no workspace.
+
+O acesso ao agente dentro do sandbox pode ser feito por **bot do Telegram** (instruções rápidas pelo celular), por **Claude Remote Control** ([claude.ai/code](https://claude.ai/code) no browser ou app mobile), ou ambos — conforme o cenário.
 
 ---
 

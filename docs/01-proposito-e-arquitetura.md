@@ -6,17 +6,25 @@ Aqui você vai entender por que este projeto existe, qual problema ele resolve e
 
 ## O problema
 
-Desenvolver remotamente exige ou um acesso SSH decente (teclado físico, cliente SSH configurado) ou alguma solução de IDE remota. Nenhuma das duas funciona bem num celular. E mesmo no computador, manter uma VPS organizada com múltiplos projetos costuma virar bagunça rapidamente.
+Vibecode com agentes de IA (Claude Code, principalmente) é poderoso, mas perigoso quando feito sem barreira: o agente pode rodar comandos, instalar pacotes, mexer em arquivos e tocar em qualquer coisa que estiver acessível no sistema. Rodar isso na sua máquina pessoal mistura tudo num único contexto; rodar direto numa VPS sem isolamento expõe outros projetos e o próprio host.
+
+E em paralelo: você quer desenvolver de qualquer lugar (inclusive do celular) sem precisar de cliente SSH, teclado físico, ou VS Code remoto.
 
 ## A solução
 
-Um container por projeto. Cada workspace é uma aplicação separada no Coolify, com:
+Um **sandbox por projeto** — container Docker isolado, com superfície de ataque mínima:
 
-- **Claude Code** operando diretamente no código do projeto (`/workspace`)
-- **Bot do Telegram** como interface: você manda a instrução, o bot repassa pro Claude, a resposta volta formatada pra tela do celular
-- Opcionalmente, **Claude Remote Control** — sessão interativa acessível via browser em [claude.ai/code](https://claude.ai/code) ou pelo app mobile
+- **Sem Docker socket exposto** — o agente dentro do container não consegue criar/manipular outros containers
+- **Sem visibilidade entre projetos** — cada workspace só enxerga o próprio `/workspace`; o Claude de um projeto nunca vê código ou contexto de outro
+- **Network restrita pelo Coolify** — cada container fica numa rede gerenciada, sem acesso lateral a outros serviços do host
+- **Volumes nomeados separados** — `/workspace` e `/root/.claude` (credenciais OAuth) são isolados por workspace
 
-O template não muda de projeto para projeto. O que muda são as variáveis de ambiente (token do bot, token do Claude, URL do repositório).
+Dentro do sandbox seguro, o Claude Code opera com liberdade no código do projeto. Você manda instruções de duas formas, conforme o cenário:
+
+- **Bot do Telegram** — pra demandas rápidas direto do celular (mensagem → Claude processa → resposta formatada)
+- **Claude Remote Control** — sessão interativa acessível via [claude.ai/code](https://claude.ai/code) ou app mobile, ideal pra trabalho longo de vibecode
+
+O template não muda de projeto para projeto. O que muda são as variáveis de ambiente (token do bot, token do Claude, URL do repositório) e os volumes.
 
 ---
 
@@ -24,11 +32,12 @@ O template não muda de projeto para projeto. O que muda são as variáveis de a
 
 Alternativas consideradas e por que foram descartadas:
 
-- **Um container central com múltiplos projetos**: cria dependências entre projetos, o Claude de um pode "ver" o contexto de outro, e um bug num projeto pode travar o acesso a todos
-- **Docker socket exposto**: risco de segurança — qualquer processo dentro do container teria acesso ao daemon Docker da VPS
-- **Hub central com roteamento**: complexidade desnecessária, ponto único de falha
+- **Um container central com múltiplos projetos**: quebra o isolamento — o Claude de um projeto teria contexto/acesso a outros, e um bug em qualquer um trava o acesso a todos. Inviável para vibecode seguro.
+- **Docker socket exposto**: risco crítico de segurança — qualquer processo dentro do container teria acesso ao daemon Docker da VPS e poderia escapar do sandbox
+- **Hub central com roteamento**: ponto único de falha e superfície de ataque concentrada
+- **Rodar Claude na máquina pessoal**: mistura ambiente do dev com ambiente do agente; um `rm -rf` mal sugerido afeta arquivos pessoais
 
-Com um container por projeto, cada workspace é isolado: enxerga só o próprio `/workspace`, tem seu próprio bot, e um redeploy de um projeto não afeta os outros.
+Com um container por projeto, cada workspace é uma "jaula" independente: o blast radius de qualquer comando do Claude é o próprio `/workspace` daquele container. Se algo der errado, basta destruir o container e subir de novo — nada vaza pra fora.
 
 ---
 
