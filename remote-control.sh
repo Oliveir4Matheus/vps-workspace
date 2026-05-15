@@ -42,13 +42,11 @@ cmd_start() {
     local cmd
     cmd="$(build_cmd)"
 
-    # Propaga env essencial para a sessao tmux. Sem isso, o tmux server pode
-    # entregar o comando sem CLAUDE_CODE_OAUTH_TOKEN e o claude cai no login.
+    # Propaga env essencial. IMPORTANTE: nao propagamos CLAUDE_CODE_OAUTH_TOKEN
+    # nem ANTHROPIC_API_KEY pra essa sessao — eles sao tokens inference-only
+    # e fariam o claude pular as credenciais full-scope de /root/.claude.
+    # Remote Control exige o login OAuth feito via 'claude auth login'.
     local env_args=()
-    [ -n "$CLAUDE_CODE_OAUTH_TOKEN" ] && \
-        env_args+=( -e "CLAUDE_CODE_OAUTH_TOKEN=$CLAUDE_CODE_OAUTH_TOKEN" )
-    [ -n "$ANTHROPIC_API_KEY" ] && \
-        env_args+=( -e "ANTHROPIC_API_KEY=$ANTHROPIC_API_KEY" )
     [ -n "$HOME" ] && env_args+=( -e "HOME=$HOME" )
     [ -n "$PATH" ] && env_args+=( -e "PATH=$PATH" )
 
