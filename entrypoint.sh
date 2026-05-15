@@ -62,6 +62,9 @@ case "${CLAUDE_REMOTE_CONTROL,,}" in
         echo "[entrypoint] iniciando claude --remote-control em tmux..."
         /app/remote-control.sh start || \
             echo "[entrypoint] aviso: falha ao iniciar remote-control (seguindo)"
+        echo "[entrypoint] NOTA: Remote Control exige login full-scope —"
+        echo "[entrypoint] se a sessao nao aparecer em claude.ai/code, rode"
+        echo "[entrypoint] 'setup' -> 'Autenticar Claude (full-scope...)'"
         ;;
 esac
 

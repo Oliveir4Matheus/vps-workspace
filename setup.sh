@@ -14,6 +14,7 @@ options=(
     "Configurar chave SSH (colar)"
     "Configurar identidade git"
     "Testar Claude Code"
+    "Autenticar Claude (full-scope, necessario para Remote Control)"
     "Bot: iniciar"
     "Bot: parar"
     "Bot: reiniciar"
@@ -106,6 +107,27 @@ select opt in "${options[@]}"; do
         "Testar Claude Code")
             claude -p "responda apenas: ok" \
                 || echo "❌ Falhou — verifique CLAUDE_CODE_OAUTH_TOKEN"
+            ;;
+        "Autenticar Claude (full-scope, necessario para Remote Control)")
+            echo "Este fluxo loga o claude com escopo completo (necessario para"
+            echo "a feature Remote Control aparecer em claude.ai/code)."
+            echo
+            echo "O CLAUDE_CODE_OAUTH_TOKEN do .env e inference-only — funciona"
+            echo "para o bot Telegram mas NAO habilita Remote Control."
+            echo
+            echo "O comando vai exibir uma URL. Abra no seu navegador, autorize,"
+            echo "e o claude grava as credenciais em /root/.claude (volume"
+            echo "persistente — sobrevive a redeploys)."
+            echo
+            read -rp "Continuar? (s/N) " c
+            if [ "$c" = "s" ]; then
+                claude auth login || echo "❌ Login falhou — tente novamente"
+                echo
+                echo "Apos sucesso, reinicie o Remote Control:"
+                echo "  setup -> 'Reiniciar Claude Remote Control'"
+            else
+                echo "Cancelado."
+            fi
             ;;
         "Bot: iniciar")
             /app/bot-control.sh start

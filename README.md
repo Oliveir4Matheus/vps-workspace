@@ -184,6 +184,7 @@ Menu disponível:
 - Configurar chave SSH (colar)
 - Configurar identidade git
 - Testar Claude Code
+- **Autenticar Claude (full-scope)** — necessário para Remote Control. Dispara `claude auth login` interativo
 - **Bot:** iniciar / parar / reiniciar / ver logs (gerencia o `python bot.py` em tmux)
 - Reiniciar Claude Remote Control (mata e recria a sessão tmux do `claude --remote-control`)
 - Cloudflared: autenticar (login) — vincula o `cloudflared` à sua conta Cloudflare
@@ -239,12 +240,27 @@ O PID 1 do container é um processo guarda leve (`tail -f /dev/null`). Os servi�
 
 ## Claude Remote Control
 
-Com `CLAUDE_REMOTE_CONTROL=true`, o container sobe uma sessão interativa do `claude --remote-control` em **tmux detached**, em paralelo ao bot. Essa sessão fica visível e controlável pelo claude.ai (mesma interface de remote agents).
+Com `CLAUDE_REMOTE_CONTROL=true`, o container sobe uma sessão interativa do `claude --remote-control` em **tmux detached**, em paralelo ao bot. A sessão pode ser controlada por [claude.ai/code](https://claude.ai/code).
 
 - A sessão tmux chama-se `claude-rc` e roda em `/workspace`.
 - Para ver / interagir direto: `docker exec -it <ctn> tmux attach -t claude-rc` (sair sem matar: `Ctrl-b d`).
 - Para gerenciar do shell do container: `remote-control {start|stop|restart|status|attach}`.
-- Se algo travar, use a opção **"Reiniciar Claude Remote Control"** no `setup`.
+- Se algo travar, use **"Reiniciar Claude Remote Control"** no `setup`.
+
+### ⚠️ Pré-requisito: login full-scope
+
+O `CLAUDE_CODE_OAUTH_TOKEN` gerado por `claude setup-token` é **inference-only** — funciona para o bot Telegram (`claude -p`) mas a Anthropic restringe Remote Control a tokens full-scope obtidos via OAuth interativo.
+
+**Fluxo único, por workspace:**
+
+1. Suba o container com `CLAUDE_REMOTE_CONTROL=true` no `.env`
+2. `docker exec -it <ctn> setup` → **"Autenticar Claude (full-scope, necessario para Remote Control)"**
+3. O `claude auth login` exibe uma URL — abra no navegador (do PC ou celular), autorize na sua conta
+4. As credenciais ficam salvas em `/root/.claude/` (volume persistente — sobrevive a redeploys)
+5. Reinicie a sessão: `setup` → **"Reiniciar Claude Remote Control"**
+6. Vá em [claude.ai/code](https://claude.ai/code) — a sessão do workspace aparece na lista
+
+Sem esse passo, o `claude --remote-control` sobe localmente mas **não aparece** em claude.ai/code (mostra a mensagem "Remote Control requires a full-scope login token" se você executar `/remote-control` dentro da sessão).
 
 ## Cloudflared (acesso remoto a apps locais)
 
