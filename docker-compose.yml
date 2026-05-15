@@ -1,0 +1,37 @@
+# Docker Compose pro workspace.
+#
+# Este compose existe para garantir que /workspace e /root/.claude sejam
+# volumes nomeados persistentes — sem isso, cada redeploy do Coolify perde
+# o login OAuth do Claude (em /root/.claude/.credentials.json) e o trabalho
+# em progresso no /workspace.
+#
+# Como usar no Coolify:
+#   Application -> Configuration -> Build Pack -> "Docker Compose"
+#   (Coolify le este arquivo, builda usando o Dockerfile via 'build: .',
+#    e injeta as env vars definidas na UI do Coolify automaticamente.)
+#
+# Como usar fora do Coolify (manual na VPS):
+#   docker compose up -d --build
+#   (env vars vem do arquivo .env neste diretorio)
+
+services:
+  workspace:
+    build: .
+    restart: unless-stopped
+    volumes:
+      - workspace_code:/workspace
+      - workspace_claude:/root/.claude
+    # init: true garante reaping correto de processos zumbi (tmux, claude, etc).
+    init: true
+
+volumes:
+  # Os volumes sao nomeados e gerenciados pelo proprio compose — sobrevivem a
+  # 'docker compose down' e 'up' (so somem com 'down -v').
+  #
+  # Caso queira reaproveitar volumes ja existentes (ex: workspace01-claude
+  # criado manualmente antes da migracao para compose), troque por:
+  #     workspace_claude:
+  #       external: true
+  #       name: workspace01-claude
+  workspace_code:
+  workspace_claude:

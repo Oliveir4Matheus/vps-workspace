@@ -37,12 +37,14 @@ RUN chmod +x entrypoint.sh setup.sh remote-control.sh bot-control.sh prime-claud
 
 WORKDIR /workspace
 
-# Declara os pontos de mount necessarios para persistencia:
-# - /workspace: repo clonado e trabalho em progresso
-# - /root/.claude: credenciais OAuth (claude auth login), historico, configs
-# IMPORTANTE: no Coolify, ainda eh necessario configurar Persistent Storage
-# mapeando esses caminhos para volumes nomeados — senao o Docker cria
-# anonymous volumes que viram orfaos a cada recriacao do container.
-VOLUME ["/workspace", "/root/.claude"]
+# /workspace e /root/.claude precisam ser volumes persistentes — sem isso,
+# rebuilds perdem login OAuth do Claude e trabalho em progresso. A forma
+# recomendada eh subir esta imagem via docker-compose.yml (incluido no repo),
+# que declara volumes nomeados gerenciados pelo proprio compose.
+#
+# A diretiva VOLUME nao eh usada de proposito: com VOLUME declarado, alguns
+# orquestradores (incluindo Coolify em modo Dockerfile) criam ANONYMOUS
+# volumes a cada deploy, que viram orfaos e nao persistem. Volumes nomeados
+# vem do compose ou da Persistent Storage do Coolify.
 
 ENTRYPOINT ["/app/entrypoint.sh"]
