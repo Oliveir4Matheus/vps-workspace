@@ -55,6 +55,10 @@ esac
 # e tambem por 'tmux attach -t claude-rc' dentro do container.
 case "${CLAUDE_REMOTE_CONTROL,,}" in
     1|true|yes|on)
+        # Primeiro patcha /root/.claude.json para pular wizards (tema, trust,
+        # boas-vindas). Sem isso, o claude em tmux trava esperando input.
+        /app/prime-claude-config.sh || \
+            echo "[entrypoint] aviso: prime-claude-config falhou (seguindo)"
         echo "[entrypoint] iniciando claude --remote-control em tmux..."
         /app/remote-control.sh start || \
             echo "[entrypoint] aviso: falha ao iniciar remote-control (seguindo)"

@@ -29,8 +29,8 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY bot.py entrypoint.sh setup.sh remote-control.sh bot-control.sh ./
-RUN chmod +x entrypoint.sh setup.sh remote-control.sh bot-control.sh \
+COPY bot.py entrypoint.sh setup.sh remote-control.sh bot-control.sh prime-claude-config.sh ./
+RUN chmod +x entrypoint.sh setup.sh remote-control.sh bot-control.sh prime-claude-config.sh \
     && ln -s /app/setup.sh /usr/local/bin/setup \
     && ln -s /app/remote-control.sh /usr/local/bin/remote-control \
     && ln -s /app/bot-control.sh /usr/local/bin/bot-control

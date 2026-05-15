@@ -34,6 +34,11 @@ cmd_start() {
         echo "ℹ️  sessao '$SESSION' ja esta rodando — use 'restart' para reiniciar"
         return 0
     fi
+
+    # Garante que onboarding/trust estao marcados — sem isso o claude trava
+    # esperando input interativo dentro do tmux.
+    [ -x /app/prime-claude-config.sh ] && /app/prime-claude-config.sh || true
+
     local cmd
     cmd="$(build_cmd)"
 
